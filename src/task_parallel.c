@@ -56,6 +56,7 @@ void updateBody(Body *body, Body *others, int numBodies, double dt) {
     double ax = 0.0;
     double ay = 0.0;
 
+    #pragma omp for
     for (int i = 0; i < numBodies; i++) {
         if (body != &others[i]) {
             double force = gravityForce(*body, others[i]);
@@ -68,6 +69,9 @@ void updateBody(Body *body, Body *others, int numBodies, double dt) {
                 elastic_collision(body, &others[i]);
             }
         }
+
+        //printf("Threads: %d\n", omp_get_thread_num());
+        
     }
 
     body->vx += ax * dt;
@@ -125,7 +129,12 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
+    omp_set_num_threads(4);
+    printf("Threads: %d\n", omp_get_thread_num());
+
     double start = omp_get_wtime();
+
+    #pragma omp parallel
 
     for (int i = 0; i < k; i++) {
         for (int j = 0; j < count; j++) {
