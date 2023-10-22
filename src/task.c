@@ -7,11 +7,15 @@
 #define G 6.67430e-11 // гравитационная постоянная
 #define DT 1.0        // шаг интегрирования (в секундах)
 
+int glob = 0;
+
 typedef struct {
     double x;
     double y;
-    double vx;
-    double vy;
+    double vx_cur;
+    double vy_cur;
+    double vx_fut;
+    double vy_fut;
     double mass;
     double radius;
 } Body;
@@ -37,22 +41,20 @@ void elastic_collision(Body *b1, Body *b2) {
     double dx = b2->x - b1->x;
     double dy = b2->y - b1->y;
     double d = sqrt(dx*dx + dy*dy);
-    //printf("dx=%lf dy=%lf d=%lf\n");
     double nx = dx / d;
     double ny = dy / d;
-    double p = 2 * (b1->vx * nx + b1->vy * ny - b2->vx * nx - b2->vy * ny) / (m1 + m2);
-    v1x = b1->vx - p * m2 * nx;
-    v1y = b1->vy - p * m2 * ny;
-    v2x = b2->vx + p * m1 * nx;
-    v2y = b2->vy + p * m1 * ny;
-    b1->vx = v1x;
-    b1->vy = v1y;
-    b2->vx = v2x;
-    b2->vy = v2y;
+    double p = 2 * (b1->vx_cur * nx + b1->vy_cur * ny - b2->vx_cur * nx - b2->vy_cur * ny) / (m1 + m2);
+    v1x = b1->vx_cur - p * m2 * nx;
+    v1y = b1->vy_cur - p * m2 * ny;
+    v2x = b2->vx_cur + p * m1 * nx;
+    v2y = b2->vy_cur + p * m1 * ny;
+    b1->vx_fut = v1x;
+    b1->vy_fut = v1y;
+    glob++;
 }
 
 // Функция для обновления скоростей и координат тела с учетом гравитации и столкновений
-void updateBody(Body *body, Body *others, int numBodies, double dt) {
+void gravity_influence(Body *body, Body *others, int numBodies, double dt) {
     double ax = 0.0;
     double ay = 0.0;
 
@@ -60,6 +62,7 @@ void updateBody(Body *body, Body *others, int numBodies, double dt) {
         if (body != &others[i]) {
             double force = gravityForce(*body, others[i]);
             double r = distance(*body, others[i]);
+
             ax += force * (others[i].x - body->x) / (body->mass * r);
             ay += force * (others[i].y - body->y) / (body->mass * r);
 
@@ -70,10 +73,16 @@ void updateBody(Body *body, Body *others, int numBodies, double dt) {
         }
     }
 
-    body->vx += ax * dt;
-    body->vy += ay * dt;
-    body->x += body->vx * dt;
-    body->y += body->vy * dt;
+    body->vx_fut += ax * dt;
+    body->vy_fut += ay * dt;
+}
+
+void update(Body* body, double dt) {
+    body->vx_cur = body->vx_fut;
+    body->vy_cur = body->vy_fut;
+
+    body->x += body->vx_cur * dt;
+    body->y += body->vx_cur * dt;
 }
 
 int main(int argc, char* argv[]) {
@@ -106,8 +115,8 @@ int main(int argc, char* argv[]) {
     if (count <= 10) {
         printf("Initial state:\n");
         for (int i = 0;i<count;i++) {
-            printf("Body %d: x=%f, y=%f, vx=%f, vy=%f, mass=%f, radius=%f\n", i+1, 
-                bodies[i].x, bodies[i].y, bodies[i].vx, bodies[i].vy, bodies[i].mass, bodies[i].radius);
+            printf("Body %d: x=%.2f, y=%.2f, vx=%.2f, vy=%.2f, mass=%.2f, radius=%.2f\n", i+1, 
+                bodies[i].x, bodies[i].y, bodies[i].vx_cur, bodies[i].vy_cur, bodies[i].mass, bodies[i].radius);
         }
     }
 
@@ -127,19 +136,24 @@ int main(int argc, char* argv[]) {
 
     double start = omp_get_wtime();
 
-    for (int i = 0; i < k; i++) {
+    for (int i = 0; i < k / DT; i++) {
         for (int j = 0; j < count; j++) {
-            updateBody(&bodies[j], bodies, count, DT);
+            gravity_influence(&bodies[j], bodies, count, DT);
+        }
+        for (int j = 0; j < count; j++) {
+            update(&bodies[j], DT);
         }
     }
 
     double finish = omp_get_wtime();
 
     // Вывод координат заданного тела после k секунд
-    printf("Body %d: x=%f, y=%f\n", target, bodies[target-1].x, bodies[target-1].y);
-    printf("Time: %lf", finish - start);
+    printf("Body %d: x=%lf, y=%lf\n", target, bodies[target-1].x, bodies[target-1].y);
+    printf("Time: %lf\n", finish - start);
 
     free(bodies);
+
+    printf("GLOB: %d", glob);
 
     return 0;
 }

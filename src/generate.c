@@ -3,13 +3,13 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define count 1000
-
 typedef struct {
     double x;
     double y;
-    double vx;
-    double vy;
+    double vx_cur;
+    double vy_cur;
+    double vx_fut;
+    double vy_fut;
     double mass;
     double radius;
 } Body;
@@ -35,17 +35,26 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
+    printf("Enter count of bodies: ");
+    int count; // порядковый номер заданного тела
+    if (!(scanf("%d", &count)==1 && count>=1)) {
+        printf("Input error\n");
+        return 0;
+    }
+
     /*Body bodies[2] = {
         {0.0, 0.0, 0.0, 0.0, 1.0e12, 10.0},  // Тело 1
         {100.0, 0.0, -1.0, 0.0, 1.0e12, 10.0} // Тело 2
     };*/
 
-    Body bodies[count];
+    Body* bodies = (Body*)malloc(count * sizeof(Body));
     for (int i = 0;i<count;i++) {
         bodies[i].x = drand(-100,100);
         bodies[i].y = drand(-100,100);
-        bodies[i].vx = drand(-10,10);
-        bodies[i].vy = drand(-10,10);
+        bodies[i].vx_cur = drand(-10,10);
+        bodies[i].vy_cur = drand(-10,10);
+        bodies[i].vx_fut = 0;
+        bodies[i].vy_fut = 0;
         bodies[i].mass = drand(1,1.0e12);
         bodies[i].radius = drand(1,50);
     }
@@ -54,9 +63,9 @@ int main(int argc, char* argv[]) {
         fwrite((void*)&bodies[i], sizeof(Body), 1, file);
     }
 
-    fclose(file);
+    free(bodies);
 
-    
+    fclose(file);
 
     return 0;
 }
