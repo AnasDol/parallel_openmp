@@ -7,8 +7,6 @@
 #define G 6.67430e-11 // гравитационная постоянная
 #define DT 1.0        // шаг интегрирования (в секундах)
 
-int glob = 0;
-
 typedef struct {
     double x;
     double y;
@@ -50,7 +48,6 @@ void elastic_collision(Body *b1, Body *b2) {
     v2y = b2->vy_cur + p * m1 * ny;
     b1->vx_fut = v1x;
     b1->vy_fut = v1y;
-    glob++;
 }
 
 // Функция для обновления скоростей и координат тела с учетом гравитации и столкновений
@@ -58,7 +55,8 @@ void gravity_influence(Body *body, Body *others, int numBodies, double dt) {
     double ax = 0.0;
     double ay = 0.0;
 
-    for (int i = 0; i < numBodies; i++) {
+    int i;
+    for (i = 0; i < numBodies; i++) {
         if (body != &others[i]) {
             double force = gravityForce(*body, others[i]);
             double r = distance(*body, others[i]);
@@ -107,14 +105,16 @@ int main(int argc, char* argv[]) {
     Body* bodies = (Body*)malloc(count * sizeof(Body));
 
     fseek(file, 0, SEEK_SET);
-    for (int i = 0; !feof(file); i++)
+    int i;
+    for (i = 0; !feof(file); i++)
     {
         fread(&bodies[i], sizeof(Body),1, file);
     }
 
     if (count <= 10) {
         printf("Initial state:\n");
-        for (int i = 0;i<count;i++) {
+        int i;
+        for (i = 0;i<count;i++) {
             printf("Body %d: x=%.2f, y=%.2f, vx=%.2f, vy=%.2f, mass=%.2f, radius=%.2f\n", i+1, 
                 bodies[i].x, bodies[i].y, bodies[i].vx_cur, bodies[i].vy_cur, bodies[i].mass, bodies[i].radius);
         }
@@ -136,11 +136,12 @@ int main(int argc, char* argv[]) {
 
     double start = omp_get_wtime();
 
-    for (int i = 0; i < k / DT; i++) {
-        for (int j = 0; j < count; j++) {
+    for (i = 0; i < k / DT; i++) {
+        int j;
+        for (j = 0; j < count; j++) {
             gravity_influence(&bodies[j], bodies, count, DT);
         }
-        for (int j = 0; j < count; j++) {
+        for (j = 0; j < count; j++) {
             update(&bodies[j], DT);
         }
     }
@@ -152,8 +153,6 @@ int main(int argc, char* argv[]) {
     printf("Time: %lf\n", finish - start);
 
     free(bodies);
-
-    printf("GLOB: %d", glob);
 
     return 0;
 }

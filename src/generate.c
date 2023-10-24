@@ -48,7 +48,8 @@ int main(int argc, char* argv[]) {
     };*/
 
     Body* bodies = (Body*)malloc(count * sizeof(Body));
-    for (int i = 0;i<count;i++) {
+    int i;
+    for (i = 0; i<count; i++) {
         bodies[i].x = drand(-100,100);
         bodies[i].y = drand(-100,100);
         bodies[i].vx_cur = drand(-10,10);
@@ -59,7 +60,7 @@ int main(int argc, char* argv[]) {
         bodies[i].radius = drand(1,50);
     }
 
-    for (int i = 0;i<count;i++) {
+    for (i = 0; i<count; i++) {
         fwrite((void*)&bodies[i], sizeof(Body), 1, file);
     }
 
